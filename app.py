@@ -6,7 +6,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import streamlit as st
-from PIL import Image
 from ultralytics import YOLO
 
 
@@ -117,7 +116,10 @@ def show_detection_stats(result, model):
         count
     )
 
+    # --------------------------------------------------------
     # Confidence
+    # --------------------------------------------------------
+
     if result.boxes.conf is not None and len(result.boxes.conf) > 0:
 
         confidences = (
@@ -135,12 +137,16 @@ def show_detection_stats(result, model):
         )
 
     else:
+
         c2.metric(
             "Avg. Confidence",
             "—"
         )
 
+    # --------------------------------------------------------
     # Classes
+    # --------------------------------------------------------
+
     if result.boxes.cls is not None:
 
         class_ids = (
@@ -169,6 +175,7 @@ def show_detection_stats(result, model):
             )
 
     else:
+
         c3.metric(
             "Classes",
             0
@@ -183,15 +190,22 @@ def process_image(file_path, mode, conf):
 
     try:
 
-        # Load model
+        # ----------------------------------------------------
+        # LOAD MODEL
+        # ----------------------------------------------------
+
         with st.spinner(
             f"Loading {mode.lower()} model..."
         ):
+
             model = load_model(
                 MODEL_MAP[mode]
             )
 
-        # Read image
+        # ----------------------------------------------------
+        # READ IMAGE
+        # ----------------------------------------------------
+
         image = cv2.imread(file_path)
 
         if image is None:
@@ -200,7 +214,10 @@ def process_image(file_path, mode, conf):
             )
             return
 
-        # Inference
+        # ----------------------------------------------------
+        # INFERENCE
+        # ----------------------------------------------------
+
         with st.spinner(
             f"Running {mode.lower()}..."
         ):
@@ -213,9 +230,9 @@ def process_image(file_path, mode, conf):
                 verbose=False,
             )[0]
 
-        # ----------------------------------------------------
+        # ====================================================
         # CLASSIFICATION
-        # ----------------------------------------------------
+        # ====================================================
 
         if mode == "Classification":
 
@@ -231,7 +248,7 @@ def process_image(file_path, mode, conf):
                 st.image(
                     rgb,
                     caption="Input image",
-                    width="stretch",
+                    use_container_width=True,
                 )
 
             with col2:
@@ -280,9 +297,9 @@ def process_image(file_path, mode, conf):
 
             return
 
-        # ----------------------------------------------------
+        # ====================================================
         # DETECTION / POSE / SEGMENTATION / OBB
-        # ----------------------------------------------------
+        # ====================================================
 
         annotated = result.plot()
 
@@ -303,7 +320,7 @@ def process_image(file_path, mode, conf):
             st.image(
                 original_rgb,
                 caption="Input image",
-                width="stretch",
+                use_container_width=True,
             )
 
         with col2:
@@ -311,7 +328,7 @@ def process_image(file_path, mode, conf):
             st.image(
                 annotated_rgb,
                 caption=f"{mode} result",
-                width="stretch",
+                use_container_width=True,
             )
 
         st.subheader("Results")
@@ -512,7 +529,10 @@ def process_video(file_path, mode, conf):
                         interpolation=cv2.INTER_AREA,
                     )
 
-                # YOLO inference
+                # ------------------------------------------------
+                # YOLO INFERENCE
+                # ------------------------------------------------
+
                 result = model.predict(
                     frame,
                     conf=conf,
@@ -562,7 +582,10 @@ def process_video(file_path, mode, conf):
 
                     annotated = result.plot()
 
-                # Write frame
+                # ------------------------------------------------
+                # WRITE FRAME
+                # ------------------------------------------------
+
                 writer.write(
                     annotated
                 )
@@ -584,7 +607,7 @@ def process_video(file_path, mode, conf):
                         preview_frame,
                         channels="RGB",
                         caption="Live processing preview",
-                        width="stretch",
+                        use_container_width=True,
                     )
 
                     del preview_frame
@@ -661,7 +684,6 @@ def process_video(file_path, mode, conf):
             "Processed Video"
         )
 
-        # Streamlit can read the video directly
         st.video(
             output_path
         )
@@ -685,10 +707,11 @@ def process_video(file_path, mode, conf):
                 f"{mode.lower()}_result.mp4"
             ),
             mime="video/mp4",
-            width="stretch",
+            use_container_width=True,
         )
 
         del video_bytes
+
         gc.collect()
 
     except Exception as e:
@@ -715,6 +738,13 @@ def process_video(file_path, mode, conf):
                 writer.release()
             except Exception:
                 pass
+
+        # Delete generated video
+        if output_path is not None:
+
+            cleanup_file(
+                output_path
+            )
 
         gc.collect()
 
